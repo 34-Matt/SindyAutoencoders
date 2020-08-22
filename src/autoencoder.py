@@ -313,29 +313,24 @@ def sindy_library_tf(z, latent_dim, poly_order, include_sine=False):
 
     for i in range(latent_dim):
         library.append(z[:,i])
-        library.append(tf.sin(z[:,i]))
-        library.append(tf.cos(z[:,i]))
 
     if poly_order > 1:
         for i in range(latent_dim):
             for j in range(i,latent_dim):
-                library.append(tf.sin(z[:,i]+z[:,j]))
-                library.append(tf.cos(z[:,i]+z[:,j]))
+                library.append(z[:,i]*z[:,j])
 
     if poly_order > 2:
         for i in range(latent_dim):
             for j in range(i,latent_dim):
                 for k in range(j,latent_dim):
-                    library.append(tf.sin(z[:,i]+z[:,j]+z[:,k]))
-                    library.append(tf.cos(z[:,i]+z[:,j]+z[:,k]))
+                    library.append(z[:,i]*z[:,j]*z[:,k])
 
     if poly_order > 3:
         for i in range(latent_dim):
             for j in range(i,latent_dim):
                 for k in range(j,latent_dim):
                     for p in range(k,latent_dim):
-                        library.append(tf.sin(z[:,i]+z[:,j]+z[:,k]+z[:,p]))
-                        library.append(tf.cos(z[:,i]+z[:,j]+z[:,k]+z[:,p]))
+                        library.append(z[:,i]*z[:,j]*z[:,k]*z[:,p])
 
     if poly_order > 4:
         for i in range(latent_dim):
@@ -343,12 +338,42 @@ def sindy_library_tf(z, latent_dim, poly_order, include_sine=False):
                 for k in range(j,latent_dim):
                     for p in range(k,latent_dim):
                         for q in range(p,latent_dim):
-                            library.append(tf.sin(z[:,i]+z[:,j]+z[:,k]+z[:,p]+z[:,q]))
-                            library.append(tf.cos(z[:,i]+z[:,j]+z[:,k]+z[:,p]+z[:,q]))
+                            library.append(z[:,i]*z[:,j]*z[:,k]*z[:,p]*z[:,q])
 
     if include_sine:
         for i in range(latent_dim):
             library.append(tf.sin(z[:,i]))
+            library.append(tf.cos(z[:,i]))
+
+        if poly_order > 1:
+            for i in range(latent_dim):
+                for j in range(i,latent_dim):
+                    library.append(tf.sin(z[:,i]-z[:,j]))
+                    library.append(tf.cos(z[:,i]-z[:,j]))
+
+        if poly_order > 2:
+            for i in range(latent_dim):
+                for j in range(i,latent_dim):
+                    for k in range(j,latent_dim):
+                        library.append(tf.sin(z[:,i]+z[:,j]+z[:,k]))
+                        library.append(tf.cos(z[:,i]+z[:,j]+z[:,k]))
+
+        if poly_order > 3:
+            for i in range(latent_dim):
+                for j in range(i,latent_dim):
+                    for k in range(j,latent_dim):
+                        for p in range(k,latent_dim):
+                            library.append(tf.sin(z[:,i]+z[:,j]+z[:,k]+z[:,p]))
+                            library.append(tf.cos(z[:,i]+z[:,j]+z[:,k]+z[:,p]))
+
+        if poly_order > 4:
+            for i in range(latent_dim):
+                for j in range(i,latent_dim):
+                    for k in range(j,latent_dim):
+                        for p in range(k,latent_dim):
+                            for q in range(p,latent_dim):
+                                library.append(tf.sin(z[:,i]+z[:,j]+z[:,k]+z[:,p]+z[:,q]))
+                                library.append(tf.cos(z[:,i]+z[:,j]+z[:,k]+z[:,p]+z[:,q]))
 
     return tf.stack(library, axis=1)
 
@@ -364,29 +389,24 @@ def sindy_library_tf_order2(z, dz, latent_dim, poly_order, include_sine=False):
 
     for i in range(2*latent_dim):
         library.append(z_combined[:,i])
-        library.append(tf.sin(z_combined[:,i]))
-        library.append(tf.cos(z_combined[:,i]))
 
     if poly_order > 1:
         for i in range(2*latent_dim):
             for j in range(i,2*latent_dim):
-                library.append(tf.sin(z_combined[:,i], z_combined[:,j]))
-                library.append(tf.cos(z_combined[:,i], z_combined[:,j]))
+                library.append(z_combined[:,i]*z_combined[:,j])
 
     if poly_order > 2:
         for i in range(2*latent_dim):
             for j in range(i,2*latent_dim):
                 for k in range(j,2*latent_dim):
-                    library.append(tf.sin(z_combined[:,i]*z_combined[:,j]*z_combined[:,k]))
-                    library.append(tf.cos(z_combined[:,i]*z_combined[:,j]*z_combined[:,k]))
+                    library.append(z_combined[:,i]*z_combined[:,j]*z_combined[:,k])
 
     if poly_order > 3:
         for i in range(2*latent_dim):
             for j in range(i,2*latent_dim):
                 for k in range(j,2*latent_dim):
                     for p in range(k,2*latent_dim):
-                        library.append(tf.sin(z_combined[:,i]*z_combined[:,j]*z_combined[:,k]*z_combined[:,p]))
-                        library.append(tf.cos(z_combined[:,i]*z_combined[:,j]*z_combined[:,k]*z_combined[:,p]))
+                        library.append(z_combined[:,i]*z_combined[:,j]*z_combined[:,k]*z_combined[:,p])
 
     if poly_order > 4:
         for i in range(2*latent_dim):
@@ -394,12 +414,42 @@ def sindy_library_tf_order2(z, dz, latent_dim, poly_order, include_sine=False):
                 for k in range(j,2*latent_dim):
                     for p in range(k,2*latent_dim):
                         for q in range(p,2*latent_dim):
-                            library.append(tf.sin(z_combined[:,i]*z_combined[:,j]*z_combined[:,k]*z_combined[:,p]*z_combined[:,q]))
-                            library.append(tf.cos(z_combined[:,i]*z_combined[:,j]*z_combined[:,k]*z_combined[:,p]*z_combined[:,q]))
+                            library.append(z_combined[:,i]*z_combined[:,j]*z_combined[:,k]*z_combined[:,p]*z_combined[:,q])
 
     if include_sine:
         for i in range(2*latent_dim):
             library.append(tf.sin(z_combined[:,i]))
+            library.append(tf.cos(z_combined[:,i]))
+
+        if poly_order > 1:
+            for i in range(2*latent_dim):
+                for j in range(i,2*latent_dim):
+                    library.append(tf.sin(z_combined[:,i]-z_combined[:,j]))
+                    library.append(tf.cos(z_combined[:,i]-z_combined[:,j]))
+
+        if poly_order > 2:
+            for i in range(2*latent_dim):
+                for j in range(i,2*latent_dim):
+                    for k in range(j,2*latent_dim):
+                        library.append(tf.sin(z_combined[:,i]+z_combined[:,j]+z_combined[:,k]))
+                        library.append(tf.cos(z_combined[:,i]+z_combined[:,j]+z_combined[:,k]))
+
+        if poly_order > 3:
+            for i in range(2*latent_dim):
+                for j in range(i,2*latent_dim):
+                    for k in range(j,2*latent_dim):
+                        for p in range(k,2*latent_dim):
+                            library.append(tf.sin(z_combined[:,i]+z_combined[:,j]+z_combined[:,k]+z_combined[:,p]))
+                            library.append(tf.cos(z_combined[:,i]+z_combined[:,j]+z_combined[:,k]+z_combined[:,p]))
+
+        if poly_order > 4:
+            for i in range(2*latent_dim):
+                for j in range(i,2*latent_dim):
+                    for k in range(j,2*latent_dim):
+                        for p in range(k,2*latent_dim):
+                            for q in range(p,2*latent_dim):
+                                library.append(tf.sin(z_combined[:,i]+z_combined[:,j]+z_combined[:,k]+z_combined[:,p]+z_combined[:,q]))
+                                library.append(tf.cos(z_combined[:,i]+z_combined[:,j]+z_combined[:,k]+z_combined[:,p]+z_combined[:,q]))
 
     return tf.stack(library, axis=1)
 

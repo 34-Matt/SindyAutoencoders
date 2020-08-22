@@ -7,12 +7,10 @@ def library_size(n, poly_order, use_sine=False, include_constant=True):
     l = 0
     for k in range(poly_order+1):
         l += int(binom(n+k-1,k))
-    l -= 1
-    l = 2*l + 1
     if use_sine:
-        l += n
-    if include_constant:
-        l += 1
+        l = 3*l - 2
+    if not include_constant:
+        l -= 1
     return l
 
 
@@ -23,29 +21,20 @@ def sindy_library(X, poly_order, include_sine=False):
     index = 1
 
     for i in range(n):
-        #3n
         library[:,index] = X[:,i]
-        index += 1
-        library[:,index] = np.sin(X[:,i])
-        index += 1
-        library[:,index] = np.cos(X[:,i])
         index += 1
 
     if poly_order > 1:
         for i in range(n):
             for j in range(i,n):
-                library[:,index] = np.sin(X[:,i]+X[:,j])
-                index += 1
-                library[:,index] = np.cos(X[:,i]+X[:,j])
+                library[:,index] = X[:,i]*X[:,j]
                 index += 1
 
     if poly_order > 2:
         for i in range(n):
             for j in range(i,n):
                 for k in range(j,n):
-                    library[:,index] = np.sin(X[:,i]+X[:,j]+X[:,k])
-                    index += 1
-                    library[:,index] = np.cos(X[:,i]+X[:,j]+X[:,k])
+                    library[:,index] = X[:,i]*X[:,j]*X[:,k]
                     index += 1
 
     if poly_order > 3:
@@ -53,9 +42,7 @@ def sindy_library(X, poly_order, include_sine=False):
             for j in range(i,n):
                 for k in range(j,n):
                     for q in range(k,n):
-                        library[:,index] = np.sin(X[:,i]+X[:,j]+X[:,k]+X[:,q])
-                        index += 1
-                        library[:,index] = np.cos(X[:,i]+X[:,j]+X[:,k]+X[:,q])
+                        library[:,index] = X[:,i]*X[:,j]*X[:,k]*X[:,q]
                         index += 1
 
     if poly_order > 4:
@@ -64,15 +51,53 @@ def sindy_library(X, poly_order, include_sine=False):
                 for k in range(j,n):
                     for q in range(k,n):
                         for r in range(q,n):
-                                library[:,index] = np.sin(X[:,i]+X[:,j]+X[:,k]+X[:,q]+X[:,r])
-                                index += 1
-                                library[:,index] = np.cos(X[:,i]+X[:,j]+X[:,k]+X[:,q]+X[:,r])
+                                library[:,index] = X[:,i]*X[:,j]*X[:,k]*X[:,q]*X[:,r]
                                 index += 1
 
     if include_sine:
         for i in range(n):
             library[:,index] = np.sin(X[:,i])
             index += 1
+            library[:,index] = np.cos(X[:,i])
+            index += 1
+
+        if poly_order > 1:
+            for i in range(n):
+                for j in range(i,n):
+                    library[:,index] = np.sin(X[:,i]-X[:,j])
+                    index += 1
+                    library[:,index] = np.cos(X[:,i]-X[:,j])
+                    index += 1
+
+        if poly_order > 2:
+            for i in range(n):
+                for j in range(i,n):
+                    for k in range(j,n):
+                        library[:,index] = np.sin(X[:,i]+X[:,j]+X[:,k])
+                        index += 1
+                        library[:,index] = np.cos(X[:,i]+X[:,j]+X[:,k])
+                        index += 1
+
+        if poly_order > 3:
+            for i in range(n):
+                for j in range(i,n):
+                    for k in range(j,n):
+                        for q in range(k,n):
+                            library[:,index] = np.sin(X[:,i]+X[:,j]+X[:,k]+X[:,q])
+                            index += 1
+                            library[:,index] = np.cos(X[:,i]+X[:,j]+X[:,k]+X[:,q])
+                            index += 1
+
+        if poly_order > 4:
+            for i in range(n):
+                for j in range(i,n):
+                    for k in range(j,n):
+                        for q in range(k,n):
+                            for r in range(q,n):
+                                    library[:,index] = np.sin(X[:,i]+X[:,j]+X[:,k]+X[:,q]+X[:,r])
+                                    index += 1
+                                    library[:,index] = np.cos(X[:,i]+X[:,j]+X[:,k]+X[:,q]+X[:,r])
+                                    index += 1
 
     return library
 
@@ -86,29 +111,20 @@ def sindy_library_order2(X, dX, poly_order, include_sine=False):
     X_combined = np.concatenate((X, dX), axis=1)
 
     for i in range(n):
-        #3n
         library[:,index] = X_combined[:,i]
-        index += 1
-        library[:,index] = np.sin(X_combined[:,i])
-        index += 1
-        library[:,index] = np.cos(X_combined[:,i])
         index += 1
 
     if poly_order > 1:
         for i in range(n):
             for j in range(i,n):
-                library[:,index] = np.sin(X_combined[:,i]+X_combined[:,j])
-                index += 1
-                library[:,index] = np.cos(X_combined[:,i]+X_combined[:,j])
+                library[:,index] = X_combined[:,i]*X_combined[:,j]
                 index += 1
 
     if poly_order > 2:
         for i in range(n):
             for j in range(i,n):
                 for k in range(j,n):
-                    library[:,index] = np.sin(X_combined[:,i]+X_combined[:,j]+X_combined[:,k])
-                    index += 1
-                    library[:,index] = np.cos(X_combined[:,i]+X_combined[:,j]+X_combined[:,k])
+                    library[:,index] = X_combined[:,i]*X_combined[:,j]*X_combined[:,k]
                     index += 1
 
     if poly_order > 3:
@@ -116,9 +132,7 @@ def sindy_library_order2(X, dX, poly_order, include_sine=False):
             for j in range(i,n):
                 for k in range(j,n):
                     for q in range(k,n):
-                        library[:,index] = np.sin(X_combined[:,i]+X_combined[:,j]+X_combined[:,k]+X_combined[:,q])
-                        index += 1
-                        library[:,index] = np.cos(X_combined[:,i]+X_combined[:,j]+X_combined[:,k]+X_combined[:,q])
+                        library[:,index] = X_combined[:,i]*X_combined[:,j]*X_combined[:,k]*X_combined[:,q]
                         index += 1
 
     if poly_order > 4:
@@ -127,15 +141,53 @@ def sindy_library_order2(X, dX, poly_order, include_sine=False):
                 for k in range(j,n):
                     for q in range(k,n):
                         for r in range(q,n):
-                                library[:,index] = np.sin(X_combined[:,i]+X_combined[:,j]+X_combined[:,k]+X_combined[:,q]+X_combined[:,r])
-                                index += 1
-                                library[:,index] = np.cos(X_combined[:,i]+X_combined[:,j]+X_combined[:,k]+X_combined[:,q]+X_combined[:,r])
+                                library[:,index] = X_combined[:,i]*X_combined[:,j]*X_combined[:,k]*X_combined[:,q]*X_combined[:,r]
                                 index += 1
 
     if include_sine:
-        for i in range(2*n):
+        for i in range(n):
             library[:,index] = np.sin(X_combined[:,i])
             index += 1
+            library[:,index] = np.cos(X_combined[:,i])
+            index += 1
+
+        if poly_order > 1:
+            for i in range(n):
+                for j in range(i,n):
+                    library[:,index] = np.sin(X_combined[:,i]-X_combined[:,j])
+                    index += 1
+                    library[:,index] = np.cos(X_combined[:,i]-X_combined[:,j])
+                    index += 1
+
+        if poly_order > 2:
+            for i in range(n):
+                for j in range(i,n):
+                    for k in range(j,n):
+                        library[:,index] = np.sin(X_combined[:,i]+X_combined[:,j]+X_combined[:,k])
+                        index += 1
+                        library[:,index] = np.cos(X_combined[:,i]+X_combined[:,j]+X_combined[:,k])
+                        index += 1
+
+        if poly_order > 3:
+            for i in range(n):
+                for j in range(i,n):
+                    for k in range(j,n):
+                        for q in range(k,n):
+                            library[:,index] = np.sin(X_combined[:,i]+X_combined[:,j]+X_combined[:,k]+X_combined[:,q])
+                            index += 1
+                            library[:,index] = np.cos(X_combined[:,i]+X_combined[:,j]+X_combined[:,k]+X_combined[:,q])
+                            index += 1
+
+        if poly_order > 4:
+            for i in range(n):
+                for j in range(i,n):
+                    for k in range(j,n):
+                        for q in range(k,n):
+                            for r in range(q,n):
+                                    library[:,index] = np.sin(X_combined[:,i]+X_combined[:,j]+X_combined[:,k]+X_combined[:,q]+X_combined[:,r])
+                                    index += 1
+                                    library[:,index] = np.cos(X_combined[:,i]+X_combined[:,j]+X_combined[:,k]+X_combined[:,q]+X_combined[:,r])
+                                    index += 1
 
     return library
 
