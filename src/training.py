@@ -32,7 +32,7 @@ def train_network(training_data, val_data, params):
                 batch_idxs = np.arange(j*params['batch_size'], (j+1)*params['batch_size'])
                 train_dict = create_feed_dictionary(training_data, params, idxs=batch_idxs)
                 sess.run(train_op, feed_dict=train_dict)
-            
+
             if params['print_progress'] and (i % params['print_frequency'] == 0):
                 validation_losses.append(print_progress(sess, i, loss, losses, train_dict, validation_dict, x_norm, sindy_predict_norm_x))
 
@@ -48,7 +48,7 @@ def train_network(training_data, val_data, params):
                 batch_idxs = np.arange(j*params['batch_size'], (j+1)*params['batch_size'])
                 train_dict = create_feed_dictionary(training_data, params, idxs=batch_idxs)
                 sess.run(train_op_refinement, feed_dict=train_dict)
-            
+
             if params['print_progress'] and (i_refinement % params['print_frequency'] == 0):
                 validation_losses.append(print_progress(sess, i_refinement, loss_refinement, losses, train_dict, validation_dict, x_norm, sindy_predict_norm_x))
 
@@ -134,6 +134,7 @@ def create_feed_dictionary(data, params, idxs=None):
     feed_dict = {}
     feed_dict['x:0'] = data['x'][idxs]
     feed_dict['dx:0'] = data['dx'][idxs]
+    feed_dict['u:0'] = data['u'][indxs]
     if params['model_order'] == 2:
         feed_dict['ddx:0'] = data['ddx'][idxs]
     if params['sequential_thresholding']:

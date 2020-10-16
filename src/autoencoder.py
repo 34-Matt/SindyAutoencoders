@@ -14,12 +14,9 @@ def full_network(params):
     """
     input_dim = params['input_dim']
     latent_dim = params['latent_dim']
+    force_dim = params['force_dim']
     activation = params['activation']
     poly_order = params['poly_order']
-    if 'include_sine' in params.keys():
-        include_sine = params['include_sine']
-    else:
-        include_sine = False
     library_dim = params['library_dim']
     model_order = params['model_order']
 
@@ -27,6 +24,7 @@ def full_network(params):
 
     x = tf.placeholder(tf.float32, shape=[None, input_dim], name='x')
     dx = tf.placeholder(tf.float32, shape=[None, input_dim], name='dx')
+    u = tf.placeholder(tf.float32, shape=[None, force_dim], name='u')
     if model_order == 2:
         ddx = tf.placeholder(tf.float32, shape=[None, input_dim], name='ddx')
 
@@ -37,10 +35,10 @@ def full_network(params):
 
     if model_order == 1:
         dz = z_derivative(x, dx, encoder_weights, encoder_biases, activation=activation)
-        Theta = sindy_library_tf(z, latent_dim, poly_order, include_sine)
+        Theta = sindy_library_tf(z, u, latent_dim, poly_order)
     else:
         dz,ddz = z_derivative_order2(x, dx, ddx, encoder_weights, encoder_biases, activation=activation)
-        Theta = sindy_library_tf_order2(z, dz, latent_dim, poly_order, include_sine)
+        Theta = sindy_library_tf_order2(z, dz, u, latent_dim, poly_order)
 
     if params['coefficient_initialization'] == 'xavier':
         sindy_coefficients = tf.get_variable('sindy_coefficients', shape=[library_dim,latent_dim], initializer=tf.contrib.layers.xavier_initializer())
@@ -68,6 +66,7 @@ def full_network(params):
     network['dx'] = dx
     network['z'] = z
     network['dz'] = dz
+    network['u'] = u
     network['x_decode'] = x_decode
     network['dx_decode'] = dx_decode
     network['encoder_weights'] = encoder_weights
@@ -293,14 +292,17 @@ def build_network_layers(input, input_dim, output_dim, widths, activation, name)
 #     return input, weights, biases
 
 
-def sindy_library_tf(z, latent_dim, poly_order, include_sine=False):
+def sindy_library_tf(z, u, latent_dim, force_dim, poly_order):
     """
     Build the SINDy library.
 
     Arguments:
         z - 2D tensorflow array of the snapshots on which to build the library. Shape is number of
         time points by the number of state variables.
+        u - 2D tensorflow array of the snapshots on which to build the library. Shape is number of
+        time points by the number of state variables.
         latent_dim - Integer, number of state variable in z.
+        force_dim - Integer, number of state variable in u.
         poly_order - Integer, polynomial order to which to build the library. Max value is 5.
         include_sine - Boolean, whether or not to include sine terms in the library. Default False.
 
@@ -345,6 +347,26 @@ def sindy_library_tf(z, latent_dim, poly_order, include_sine=False):
             library.append(tf.sin(z[:,i]))
             library.append(tf.cos(z[:,i]))
 
+    for i in range(force_dim):
+        library.append(u[:,i])
+
+    if poly_order > 1:
+        for i in range(force_dim):
+            for j in range(i,force_dim):
+                library.append(u[:,i]*u[:,j])
+
+        for i in range(latent_dim):
+            for j in range(force_dim):
+                library.append(z[:,i]*u[:,j])
+
+    if include_sine:
+        for i in range(latent_dim):
+            for j in range(force_dim):
+                library.append(u[:,j]*tf.sin(z[:,i]))
+                library.append(u[:,j]*tf.cos(z[:,i]))
+
+
+        '''
         if poly_order > 1:
             for i in range(latent_dim):
                 for j in range(i,latent_dim):
@@ -374,84 +396,17 @@ def sindy_library_tf(z, latent_dim, poly_order, include_sine=False):
                             for q in range(p,latent_dim):
                                 library.append(tf.sin(z[:,i]+z[:,j]+z[:,k]+z[:,p]+z[:,q]))
                                 library.append(tf.cos(z[:,i]+z[:,j]+z[:,k]+z[:,p]+z[:,q]))
+        '''
 
     return tf.stack(library, axis=1)
 
 
 def sindy_library_tf_order2(z, dz, latent_dim, poly_order, include_sine=False):
     """
-    Build the SINDy library for a second order system. This is essentially the same as for a first
-    order system, but library terms are also built for the derivatives.
+    Build the SINDy library for a second order system. Calls the first function.
     """
-    library = [tf.ones(tf.shape(z)[0])]
-
     z_combined = tf.concat([z, dz], 1)
-
-    for i in range(2*latent_dim):
-        library.append(z_combined[:,i])
-
-    if poly_order > 1:
-        for i in range(2*latent_dim):
-            for j in range(i,2*latent_dim):
-                library.append(z_combined[:,i]*z_combined[:,j])
-
-    if poly_order > 2:
-        for i in range(2*latent_dim):
-            for j in range(i,2*latent_dim):
-                for k in range(j,2*latent_dim):
-                    library.append(z_combined[:,i]*z_combined[:,j]*z_combined[:,k])
-
-    if poly_order > 3:
-        for i in range(2*latent_dim):
-            for j in range(i,2*latent_dim):
-                for k in range(j,2*latent_dim):
-                    for p in range(k,2*latent_dim):
-                        library.append(z_combined[:,i]*z_combined[:,j]*z_combined[:,k]*z_combined[:,p])
-
-    if poly_order > 4:
-        for i in range(2*latent_dim):
-            for j in range(i,2*latent_dim):
-                for k in range(j,2*latent_dim):
-                    for p in range(k,2*latent_dim):
-                        for q in range(p,2*latent_dim):
-                            library.append(z_combined[:,i]*z_combined[:,j]*z_combined[:,k]*z_combined[:,p]*z_combined[:,q])
-
-    if include_sine:
-        for i in range(2*latent_dim):
-            library.append(tf.sin(z_combined[:,i]))
-            library.append(tf.cos(z_combined[:,i]))
-
-        if poly_order > 1:
-            for i in range(2*latent_dim):
-                for j in range(i,2*latent_dim):
-                    library.append(tf.sin(z_combined[:,i]-z_combined[:,j]))
-                    library.append(tf.cos(z_combined[:,i]-z_combined[:,j]))
-
-        if poly_order > 2:
-            for i in range(2*latent_dim):
-                for j in range(i,2*latent_dim):
-                    for k in range(j,2*latent_dim):
-                        library.append(tf.sin(z_combined[:,i]+z_combined[:,j]+z_combined[:,k]))
-                        library.append(tf.cos(z_combined[:,i]+z_combined[:,j]+z_combined[:,k]))
-
-        if poly_order > 3:
-            for i in range(2*latent_dim):
-                for j in range(i,2*latent_dim):
-                    for k in range(j,2*latent_dim):
-                        for p in range(k,2*latent_dim):
-                            library.append(tf.sin(z_combined[:,i]+z_combined[:,j]+z_combined[:,k]+z_combined[:,p]))
-                            library.append(tf.cos(z_combined[:,i]+z_combined[:,j]+z_combined[:,k]+z_combined[:,p]))
-
-        if poly_order > 4:
-            for i in range(2*latent_dim):
-                for j in range(i,2*latent_dim):
-                    for k in range(j,2*latent_dim):
-                        for p in range(k,2*latent_dim):
-                            for q in range(p,2*latent_dim):
-                                library.append(tf.sin(z_combined[:,i]+z_combined[:,j]+z_combined[:,k]+z_combined[:,p]+z_combined[:,q]))
-                                library.append(tf.cos(z_combined[:,i]+z_combined[:,j]+z_combined[:,k]+z_combined[:,p]+z_combined[:,q]))
-
-    return tf.stack(library, axis=1)
+    return sindy_library_tf(z_combined, u, latent_dim, force_dim, poly_order)
 
 
 def z_derivative(input, dx, weights, biases, activation='elu'):

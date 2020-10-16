@@ -2,8 +2,8 @@ import numpy as np
 from scipy.integrate import odeint
 
 
-def get_pendulum_data(n_ics):
-    t,x,dx,ddx,z = generate_pendulum_data(n_ics)
+def get_pendulum_data(n_ics,U):
+    t,x,dx,ddx,z = generate_pendulum_data(n_ics,U)
     data = {}
     data['t'] = t
     data['x'] = x.reshape((n_ics*t.size, -1))
@@ -15,12 +15,15 @@ def get_pendulum_data(n_ics):
     return data
 
 
-def generate_pendulum_data(n_ics):
-    f  = lambda z, t : [z[1], -np.sin(z[0])]
-    t = np.arange(0, 10, .02)
+def generate_pendulum_data(n_ics,U):
+    U0 = U(t)
+    Ulen = len(U0)
+
+    t = np.arange(0, 10, .01)
 
     z = np.zeros((n_ics,t.size,2))
     dz = np.zeros(z.shape)
+    u = np.zeros((n_ics,t.size,1))
 
     z1range = np.array([-np.pi,np.pi])
     z2range = np.array([-2.1,2.1])
@@ -30,8 +33,10 @@ def generate_pendulum_data(n_ics):
             (z2range[1]-z2range[0])*np.random.rand()+z2range[0]])
         if np.abs(z0[1]**2/2. - np.cos(z0[0])) > .99:
             continue
+        f  = lambda z, t : [z[1], -np.sin(z[0])+0.05*U(t)[i%Ulen]]
         z[i] = odeint(f, z0, t)
         dz[i] = np.array([f(z[i,j], t[j]) for j in range(len(t))])
+        u[i] = np.array([U(t[j]) for j in range(len(t))])
         i += 1
 
     x,dx,ddx = pendulum_to_movie(z, dz)
@@ -47,7 +52,7 @@ def generate_pendulum_data(n_ics):
     #                                                            + (-np.cos(theta-np.pi/2))*(-np.cos(theta-np.pi/2))*dtheta**2 \
     #                                                            + (yy - np.sin(theta-np.pi/2))*(np.sin(theta-np.pi/2))*dtheta**2 \
     #                                                            + (yy - np.sin(theta-np.pi/2))*(-np.cos(theta-np.pi/2))*ddtheta)
-        
+
     # x = np.zeros((n_ics, t.size, n, n))
     # dx = np.zeros((n_ics, t.size, n, n))
     # ddx = np.zeros((n_ics, t.size, n, n))
@@ -59,7 +64,7 @@ def generate_pendulum_data(n_ics):
     #         ddx[i,j] = create_image(z[i,j,0])*((argument_derivative(z[i,j,0], dz[i,j,0]))**2 \
     #                         + argument_derivative2(z[i,j,0], dz[i,j,0], dz[i,j,1]))
 
-    return t,x,dx,ddx,z
+    return t,x,dx,ddx,z,u
 
 
 def pendulum_to_movie(z, dz):
@@ -76,7 +81,7 @@ def pendulum_to_movie(z, dz):
                                                                + (-np.cos(theta-np.pi/2))*(-np.cos(theta-np.pi/2))*dtheta**2 \
                                                                + (y2 - np.sin(theta-np.pi/2))*(np.sin(theta-np.pi/2))*dtheta**2 \
                                                                + (y2 - np.sin(theta-np.pi/2))*(-np.cos(theta-np.pi/2))*ddtheta)
-        
+
     x = np.zeros((n_ics, n_samples, n, n))
     dx = np.zeros((n_ics, n_samples, n, n))
     ddx = np.zeros((n_ics, n_samples, n, n))
@@ -87,7 +92,7 @@ def pendulum_to_movie(z, dz):
             dx[i,j] = (create_image(z[i,j,0])*argument_derivative(z[i,j,0], dz[i,j,0]))
             ddx[i,j] = create_image(z[i,j,0])*((argument_derivative(z[i,j,0], dz[i,j,0]))**2 \
                             + argument_derivative2(z[i,j,0], dz[i,j,0], dz[i,j,1]))
-            
+
     return x,dx,ddx
 
 
